@@ -35,48 +35,6 @@ export function LockScreen({
 
   const isDark = theme === 'dark';
 
-  const handlePinPress = (digit: string) => {
-    if (pinDigits.length < 6) {
-      const next = [...pinDigits, digit];
-      setPinDigits(next);
-      setErrorMessage(null);
-      if (next.length === 6) {
-        verifyAuth(next.join(''));
-      }
-    }
-  };
-
-  const handlePinBackspace = () => {
-    setPinDigits(prev => prev.slice(0, -1));
-  };
-
-  useEffect(() => {
-    if (authMode !== 'pin') return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (isVerifying) return;
-      if (/^[0-9]$/.test(e.key)) {
-        e.preventDefault();
-        setPinDigits(prev => {
-          if (prev.length >= 6) return prev;
-          const next = [...prev, e.key];
-          setErrorMessage(null);
-          if (next.length === 6) {
-            verifyAuth(next.join(''));
-          }
-          return next;
-        });
-      } else if (e.key === 'Backspace') {
-        e.preventDefault();
-        setPinDigits(prev => prev.slice(0, -1));
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setPinDigits([]);
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [authMode, isVerifying]);
-
   const verifyAuth = async (credential: string) => {
     setIsVerifying(true);
     setErrorMessage(null);
@@ -109,6 +67,48 @@ export function LockScreen({
       }
     }, 320);
   };
+
+  const handlePinPress = (digit: string) => {
+    if (pinDigits.length < 6) {
+      const next = [...pinDigits, digit];
+      setPinDigits(next);
+      setErrorMessage(null);
+      if (next.length === 6) {
+        verifyAuth(next.join(''));
+      }
+    }
+  };
+
+  const handlePinBackspace = () => {
+    setPinDigits(prev => prev.slice(0, -1));
+  };
+
+  useEffect(() => {
+    if (authMode !== 'pin') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isVerifying) return;
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        setPinDigits(prev => {
+          if (prev.length >= 6) return prev;
+          const next = [...prev, e.key];
+          setErrorMessage(null);
+          if (next.length === 6) {
+            setTimeout(() => verifyAuth(next.join('')), 0);
+          }
+          return next;
+        });
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        setPinDigits(prev => prev.slice(0, -1));
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setPinDigits([]);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
 
   const handleBiometricUnlock = () => {
     setIsBiometricPrompt(true);

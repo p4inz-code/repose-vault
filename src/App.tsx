@@ -112,6 +112,8 @@ export function App() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isCommandOpen, setIsCommandOpen] = useState<boolean>(false);
+  const [commandQuery, setCommandQuery] = useState<string>('');
+  const [confirmShred, setConfirmShred] = useState<boolean>(false);
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, boolean>>({});
 
   // Auto-Lock Timer
@@ -137,13 +139,26 @@ export function App() {
     localStorage.setItem('repose_theme', next);
   };
 
+  const performLock = () => {
+    if (isTauriRuntime()) {
+      import('@tauri-apps/api/core')
+        .then(({ invoke }) => invoke('lock_vault_ipc'))
+        .catch(() => {});
+    }
+    setIsLocked(true);
+    setActiveKey(null);
+    setRevealedSecrets({});
+    setIsModalOpen(false);
+    setIsCommandOpen(false);
+  };
+
   // Timer Tick
   useEffect(() => {
     const timer = setInterval(() => {
       if (!isLocked) {
         setIdleSeconds(s => {
           if (autoLockMinutes > 0 && s + 1 >= autoLockMinutes * 60) {
-            handleLock();
+            performLock();
             return 0;
           }
           return s + 1;
@@ -161,7 +176,7 @@ export function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isLocked, autoLockMinutes]);
+  });
 
   // Global Keyboard shortcuts
   useEffect(() => {
@@ -176,6 +191,7 @@ export function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        setCommandQuery('');
         setIsCommandOpen(prev => !prev);
         setTimeout(() => commandRef.current?.focus(), 50);
         return;
@@ -183,20 +199,28 @@ export function App() {
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n' && !isLocked) {
         e.preventDefault();
-        openCreateModal();
+        setIsEditing(false);
+        setFormCategory('login');
+        setFormTitle('');
+        setFormCollection(selectedCollection !== 'all' && selectedCollection !== 'favorites' && selectedCollection !== 'trash' ? selectedCollection : 'access');
+        setFormIdentifier('');
+        setFormSecret('');
+        setFormNotes('');
+        setFormFields([{ id: 'f1', label: 'Reference / Host', value: '', isSecret: false, fieldKind: 'text' }]);
+        setIsModalOpen(true);
         return;
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
         e.preventDefault();
-        handleLock();
+        performLock();
         return;
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isLocked, isModalOpen, isCommandOpen]);
+  });
 
   // Authenticated through LockScreen
   const handleAuthenticated = async (credential: string) => {
@@ -1021,7 +1045,7 @@ export function App() {
 
               <div className={`p-2.5 rounded border ${isDark ? 'bg-zinc-950/60 border-zinc-800/80' : 'bg-zinc-50 border-zinc-200'}`}>
                 <span className="font-mono text-[10px] text-zinc-400 uppercase block mb-1">Database File Path</span>
-                <span className="font-mono text-[10px] text-zinc-300 truncate block">
+                <span className={`font-mono text-[10px] truncate block ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                   {os === 'windows'
                     ? '%APPDATA%\\Repose\\vault.repose'
                     : os === 'macos'
@@ -1033,10 +1057,11 @@ export function App() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <div className={`p-4 rounded-lg border space-y-3 ${
             isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
           }`}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <span className="font-medium block">Idle Memory Lock Timeout</span>
                 <span className="opacity-50 text-[11px]">Zeroizes decrypted key references from RAM</span>
@@ -1044,7 +1069,7 @@ export function App() {
               <select
                 value={autoLockMinutes}
                 onChange={e => setAutoLockMinutes(Number(e.target.value))}
-                className={`border rounded px-2.5 py-1 text-xs ${
+                className={`border rounded px-2.5 py-1 text-xs shrink-0 ${
                   isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200 text-black'
                 }`}
               >
@@ -1062,7 +1087,7 @@ export function App() {
             <div>
               <span className="font-medium block">Encrypted Vault Backup (.repose)</span>
               <span className="opacity-50 text-[11px] block mt-0.5">
-                Plaintext JSON export is disabled by security policy. Backups are XChaCha20-Poly1305 encrypted archives.
+                Plaintext JSON export disabled. Backups use encrypted REPOSE01 archives.
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1073,7 +1098,7 @@ export function App() {
                 }`}
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Export Encrypted .repose</span>
+                <span>Export .repose</span>
               </button>
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -1082,7 +1107,7 @@ export function App() {
                 }`}
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Restore .repose Archive</span>
+                <span>Restore .repose</span>
               </button>
               <input
                 ref={fileInputRef}
@@ -1092,6 +1117,7 @@ export function App() {
                 onChange={handleImportFile}
               />
             </div>
+          </div>
           </div>
 
           <div className={`p-4 rounded-lg border space-y-3 ${
@@ -1147,22 +1173,41 @@ export function App() {
             )}
           </div>
 
-          <div className={`p-4 rounded-lg border space-y-2 ${
+          <div className={`p-4 rounded-lg border flex items-center justify-between gap-4 ${
             isDark ? 'bg-zinc-900/30 border-rose-900/30' : 'bg-rose-50/50 border-rose-200'
           }`}>
-            <span className="font-medium text-rose-500 block">Shred Local Database</span>
-            <p className="opacity-50 text-[11px]">Wipes all encrypted records permanently from this computer.</p>
-            <button
-              onClick={async () => {
-                if (confirm('Irreversible: shred entire local vault database?')) {
-                  await wipeVaultDatabase();
-                  window.location.reload();
-                }
-              }}
-              className="px-3 py-1 rounded bg-rose-600/10 text-rose-500 border border-rose-500/20 hover:bg-rose-600/20 cursor-pointer font-medium"
-            >
-              Shred Database
-            </button>
+            <div>
+              <span className="font-medium text-rose-500 block">Shred Local Database</span>
+              <p className="opacity-50 text-[11px]">Wipes all encrypted records permanently from this computer.</p>
+            </div>
+            {confirmShred ? (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setConfirmShred(false)}
+                  className={`px-2.5 py-1 rounded border text-xs cursor-pointer ${
+                    isDark ? 'border-zinc-700 text-zinc-300' : 'border-zinc-300 text-zinc-700'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await wipeVaultDatabase();
+                    window.location.reload();
+                  }}
+                  className="px-3 py-1 rounded bg-rose-600 text-white hover:bg-rose-500 cursor-pointer font-medium text-xs"
+                >
+                  Confirm Shred
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmShred(true)}
+                className="px-3 py-1.5 rounded bg-rose-600/10 text-rose-500 border border-rose-500/20 hover:bg-rose-600/20 cursor-pointer font-medium shrink-0"
+              >
+                Shred Database
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1350,22 +1395,60 @@ export function App() {
 
       {/* Command Palette */}
       {isCommandOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-2xs flex items-start justify-center pt-20 p-4 z-50">
-          <div className={`rounded-xl border max-w-lg w-full p-2.5 shadow-2xl ${
-            isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
-          }`}>
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 opacity-50" />
+        <div
+          onClick={() => setIsCommandOpen(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-2xs flex items-start justify-center pt-20 p-4 z-50"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className={`rounded-xl border max-w-lg w-full p-2.5 shadow-2xl ${
+              isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'
+            }`}
+          >
+            <div className="relative flex items-center">
+              <Search className="w-3.5 h-3.5 absolute left-3 opacity-50" />
               <input
                 ref={commandRef}
                 type="text"
+                value={commandQuery}
+                onChange={e => setCommandQuery(e.target.value)}
                 placeholder="Jump to any secret or space..."
-                className={`w-full rounded pl-8 pr-3 py-1.5 text-xs outline-none border ${
+                className={`w-full rounded pl-8 pr-12 py-1.5 text-xs outline-none border ${
                   isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200 text-black'
                 }`}
               />
+              <kbd className="absolute right-2.5 text-[9px] font-mono opacity-40">ESC</kbd>
             </div>
-            <div className={`mt-2 divide-y text-xs ${isDark ? 'divide-zinc-800' : 'divide-zinc-200'}`}>
+            <div className={`mt-2 divide-y text-xs max-h-64 overflow-y-auto ${isDark ? 'divide-zinc-800/70' : 'divide-zinc-200'}`}>
+              {items
+                .filter(it => !it.isTrash && (
+                  !commandQuery ||
+                  it.title.toLowerCase().includes(commandQuery.toLowerCase()) ||
+                  (it.primaryIdentifier && it.primaryIdentifier.toLowerCase().includes(commandQuery.toLowerCase()))
+                ))
+                .slice(0, 6)
+                .map(it => (
+                  <div
+                    key={it.id}
+                    onClick={() => {
+                      setActiveTab('vault');
+                      setSelectedCollection('all');
+                      setSelectedItemId(it.id);
+                      setIsCommandOpen(false);
+                    }}
+                    className={`p-2 rounded cursor-pointer flex items-center justify-between ${
+                      isDark ? 'hover:bg-zinc-800 text-zinc-200' : 'hover:bg-zinc-100 text-zinc-800'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <span className="font-medium block truncate">{it.title}</span>
+                      {it.primaryIdentifier && (
+                        <span className="text-[10px] font-mono opacity-50 truncate block">{it.primaryIdentifier}</span>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-mono uppercase opacity-40 ml-2 shrink-0">{it.category}</span>
+                  </div>
+                ))}
               <div
                 onClick={() => { openCreateModal(); setIsCommandOpen(false); }}
                 className={`p-2 rounded cursor-pointer flex items-center justify-between ${
@@ -1373,14 +1456,14 @@ export function App() {
                 }`}
               >
                 <span>New Secret Record...</span>
-                <kbd className="text-[10px] font-mono opacity-50">Ctrl+N</kbd>
+                <kbd className="text-[10px] font-mono opacity-50">{os === 'macos' ? '⌘N' : 'Ctrl+N'}</kbd>
               </div>
               <div
                 onClick={() => { handleLock(); }}
                 className="p-2 rounded hover:bg-rose-500/10 cursor-pointer flex items-center justify-between text-rose-500"
               >
                 <span>Lock Vault Immediately</span>
-                <kbd className="text-[10px] font-mono opacity-50">Ctrl+L</kbd>
+                <kbd className="text-[10px] font-mono opacity-50">{os === 'macos' ? '⌘L' : 'Ctrl+L'}</kbd>
               </div>
             </div>
           </div>
