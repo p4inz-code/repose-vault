@@ -604,7 +604,7 @@ export function App() {
         <div className="flex-1 flex overflow-hidden">
           
           {/* Column 1: Collections Sidebar */}
-          <aside className={`w-48 border-r flex flex-col justify-between shrink-0 text-xs ${
+          <aside className={`w-44 border-r flex flex-col justify-between shrink-0 text-xs ${
             isDark ? 'border-zinc-800/80 bg-zinc-950/40' : 'border-zinc-200/90 bg-[#f4f5f8]'
           }`}>
             <div className="p-2.5 space-y-3.5">
@@ -681,7 +681,7 @@ export function App() {
           </aside>
 
           {/* Column 2: Items List */}
-          <section className={`w-72 md:w-80 border-r flex flex-col shrink-0 ${
+          <section className={`w-64 lg:w-72 border-r flex flex-col shrink-0 ${
             isDark ? 'border-zinc-800/80 bg-zinc-900/20' : 'border-zinc-200/90 bg-[#fbfbfd]'
           }`}>
             <div className={`p-2 border-b ${isDark ? 'border-zinc-800/80 bg-zinc-950/40' : 'border-zinc-200/90 bg-white'}`}>
@@ -765,7 +765,7 @@ export function App() {
           {/* Column 3: Full Secret Record Inspector */}
           <main className="flex-1 flex flex-col overflow-y-auto">
             {selectedItem ? (
-              <div className="p-6 max-w-2xl space-y-5">
+              <div className="w-full p-5 space-y-4">
                 
                 {/* Header */}
                 <div className={`flex items-start justify-between pb-3.5 border-b ${
@@ -825,17 +825,18 @@ export function App() {
 
                 {/* Secret Fields */}
                 <div className="space-y-3">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
                   {selectedItem.primaryIdentifier && (
-                    <div className={`p-3 rounded-lg border flex items-center justify-between ${
+                    <div className={`p-3 rounded-lg border flex items-center justify-between min-w-0 ${
                       isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
                     }`}>
-                      <div>
+                      <div className="min-w-0 mr-3">
                         <span className="text-[10px] font-mono uppercase tracking-wider block opacity-50">Primary Identifier / Host / User</span>
-                        <span className="text-xs font-mono mt-0.5 block select-all">{selectedItem.primaryIdentifier}</span>
+                        <span className="text-xs font-mono mt-0.5 block truncate select-all">{selectedItem.primaryIdentifier}</span>
                       </div>
                       <button
                         onClick={() => triggerCopy(selectedItem.primaryIdentifier!, 'Identifier', 'id-btn')}
-                        className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 cursor-pointer ${
+                        className={`px-2.5 py-1 rounded text-xs flex items-center gap-1 cursor-pointer shrink-0 ${
                           isDark ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
                         }`}
                       >
@@ -846,13 +847,13 @@ export function App() {
                   )}
 
                   {selectedItem.primarySecret && (
-                    <div className={`p-3 rounded-lg border flex items-center justify-between ${
+                    <div className={`p-3 rounded-lg border flex items-center justify-between min-w-0 ${
                       isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
                     }`}>
-                      <div className="flex-1 mr-4 min-w-0">
+                      <div className="flex-1 mr-3 min-w-0">
                         <span className="text-[10px] font-mono uppercase tracking-wider block opacity-50">Secret Key / Passphrase / Payload</span>
-                        <span className="text-xs font-mono mt-0.5 block select-all break-all">
-                          {revealedSecrets[selectedItem.id] ? selectedItem.primarySecret : '••••••••••••••••••••••••••••••••'}
+                        <span className="text-xs font-mono mt-0.5 block select-all truncate">
+                          {revealedSecrets[selectedItem.id] ? selectedItem.primarySecret : '••••••••••••••••••••••••'}
                         </span>
                       </div>
 
@@ -877,6 +878,7 @@ export function App() {
                       </div>
                     </div>
                   )}
+                  </div>
 
                   {/* Custom Structured Fields for any format */}
                   {selectedItem.fields && selectedItem.fields.length > 0 && (
@@ -945,7 +947,7 @@ export function App() {
         </div>
       ) : (
         /* Settings Tab */
-        <div className="flex-1 p-8 max-w-xl mx-auto space-y-4 overflow-y-auto text-xs">
+        <div className="flex-1 p-6 w-full max-w-4xl mx-auto space-y-4 overflow-y-auto text-xs">
           <div>
             <h2 className="text-sm font-semibold tracking-tight">Repose Vault Configuration</h2>
             <p className="text-xs opacity-50 mt-0.5">Airgapped local storage, offline import/export, and zero-telemetry guarantees.</p>
