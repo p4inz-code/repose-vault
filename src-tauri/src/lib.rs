@@ -127,13 +127,14 @@ fn unlock_vault(
     let vault_path = get_default_vault_path().map_err(|e| e.to_string())?;
 
     if !vault_path.exists() {
-        // Initialize fresh 2-tier VMK + Passphrase + Default Quick PIN slot
+        if credential.trim().len() < 6 {
+            return Err("Master credential must be at least 6 characters.".into());
+        }
+        // Initialize fresh 2-tier VMK wrapped strictly with the user's chosen credential
         let vmk = VaultKey::generate();
         let pass_slot =
             wrap_vmk_slot(&vmk, KeySlotKind::Passphrase, &credential).map_err(|e| e.to_string())?;
-        let pin_slot =
-            wrap_vmk_slot(&vmk, KeySlotKind::QuickPin, "123456").map_err(|e| e.to_string())?;
-        let slots = vec![pass_slot, pin_slot];
+        let slots = vec![pass_slot];
 
         let payload = initial_items_json.unwrap_or_else(|| "[]".to_string());
         let sealed =

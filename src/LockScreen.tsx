@@ -111,6 +111,11 @@ export function LockScreen({
   });
 
   const handleBiometricUnlock = () => {
+    const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+    if (isTauri) {
+      setErrorMessage('OS Biometric slot not enrolled yet. Unlock with your Master Passphrase or PIN.');
+      return;
+    }
     setIsBiometricPrompt(true);
     setTimeout(() => {
       setIsBiometricPrompt(false);
