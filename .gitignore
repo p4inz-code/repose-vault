@@ -1,0 +1,15 @@
+# Dependencies & Build Outputs
+node_modules/
+dist/
+dist-release/
+*.local
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
