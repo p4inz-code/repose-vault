@@ -343,6 +343,37 @@ fn install_verified_update(
     Ok(msg)
 }
 
+#[tauri::command]
+fn export_vault_archive(state: State<'_, SecurityState>) -> Result<Vec<u8>, String> {
+    {
+        let sess = state.session.lock().map_err(|_| "Session lock error".to_string())?;
+        if sess.vmk.is_none() {
+            return Err("Vault is locked".to_string());
+        }
+    }
+    let vault_path = get_default_vault_path().map_err(|e| e.to_string())?;
+    let bytes = read_vault_file(&vault_path).map_err(|e| e.to_string())?;
+    if let Ok(mut log) = state.audit_log.lock() {
+        log.record(SecurityEventKind::BackupExported, "Exported encrypted REPOSE01 archive");
+        persist_audit(&log);
+    }
+    Ok(bytes)
+}
+
+#[tauri::command]
+fn shred_vault_db(state: State<'_, SecurityState>) -> Result<bool, String> {
+    if let Ok(mut sess) = state.session.lock() {
+        if let Some(mut vmk) = sess.vmk.take() {
+            vmk.zeroize();
+        }
+        sess.envelope_slots.clear();
+    }
+    if let Ok(dir) = get_vault_storage_dir() {
+        let _ = std::fs::remove_dir_all(dir);
+    }
+    Ok(true)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -419,7 +450,9 @@ pub fn run() {
             get_security_audit_log,
             set_screen_protection,
             check_for_updates,
-            install_verified_update
+            install_verified_update,
+            export_vault_archive,
+            shred_vault_db
         ])
         .setup(move |app| {
             #[cfg(windows)]

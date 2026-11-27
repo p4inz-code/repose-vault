@@ -562,6 +562,22 @@ export function App() {
 
   // Export encrypted .repose archive (plaintext JSON export is disabled)
   const handleExportVault = async () => {
+    if (isTauriRuntime()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const bytes = await invoke<number[]>('export_vault_archive');
+        const blob = new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `repose-backup-${new Date().toISOString().slice(0, 10)}.repose`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        setClipboardToast({ message: `Export failed: ${String(err)}`, countdown: 4 });
+      }
+      return;
+    }
     if (!activeKey) return;
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const encoded = new TextEncoder().encode(JSON.stringify(items));
@@ -1463,6 +1479,14 @@ export function App() {
                 </button>
                 <button
                   onClick={async () => {
+                    if (isTauriRuntime()) {
+                      try {
+                        const { invoke } = await import('@tauri-apps/api/core');
+                        await invoke('shred_vault_db');
+                      } catch {
+                        // Ensure UI resets regardless
+                      }
+                    }
                     await wipeVaultDatabase();
                     window.location.reload();
                   }}
@@ -1754,6 +1778,40 @@ export function App() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Non-Intrusive Update Pill */}
+      {updateStatus?.updateAvailable && updateStatus.setupUrl && updateStatus.sha256sumsUrl && updateStatus.setupName && (
+        <div className={`fixed bottom-4 left-4 rounded-lg px-3 py-2 shadow-xl flex items-center gap-2.5 z-50 text-xs border ${
+          isDark ? 'bg-zinc-900 border-emerald-800/60 text-zinc-100' : 'bg-white border-emerald-300 text-zinc-900'
+        }`}>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+          <span className="font-medium">{updateStatus.latestVersion} available</span>
+          <button
+            onClick={async () => {
+              try {
+                const { invoke } = await import('@tauri-apps/api/core');
+                await invoke('install_verified_update', {
+                  setupUrl: updateStatus.setupUrl,
+                  sha256sumsUrl: updateStatus.sha256sumsUrl,
+                  setupName: updateStatus.setupName,
+                });
+              } catch (err) {
+                setClipboardToast({ message: String(err), countdown: 5 });
+              }
+            }}
+            className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-medium cursor-pointer text-[11px]"
+          >
+            Verify &amp; Update
+          </button>
+          <button
+            onClick={() => setUpdateStatus(null)}
+            className="opacity-40 hover:opacity-100 cursor-pointer"
+            title="Dismiss"
+          >
+            <X className="w-3 h-3" />
+          </button>
         </div>
       )}
 
