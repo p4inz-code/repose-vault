@@ -116,9 +116,43 @@ export function App() {
   const [confirmShred, setConfirmShred] = useState<boolean>(false);
   const [revealedSecrets, setRevealedSecrets] = useState<Record<string, boolean>>({});
 
-  // Auto-Lock Timer
+  // Auto-Lock Timer & OS Compatibility Preferences
   const [idleSeconds, setIdleSeconds] = useState<number>(0);
   const [autoLockMinutes, setAutoLockMinutes] = useState<number>(5);
+  const [clipboardClearSeconds, setClipboardClearSeconds] = useState<number>(() => {
+    const saved = localStorage.getItem('repose_clip_clear');
+    return saved !== null ? Number(saved) : 25;
+  });
+  const [screenProtection, setScreenProtection] = useState<boolean>(true);
+  const [closeToTray, setCloseToTray] = useState<boolean>(true);
+  const [reduceMotion, setReduceMotion] = useState<boolean>(() => {
+    return localStorage.getItem('repose_reduce_motion') === 'true';
+  });
+
+  // Resizable 3-Pane Widths
+  const [sidebarWidth, setSidebarWidth] = useState<number>(184);
+  const [listWidth, setListWidth] = useState<number>(264);
+  const draggingPane = useRef<'sidebar' | 'list' | null>(null);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!draggingPane.current) return;
+      if (draggingPane.current === 'sidebar') {
+        setSidebarWidth(Math.min(240, Math.max(150, e.clientX)));
+      } else if (draggingPane.current === 'list') {
+        setListWidth(Math.min(360, Math.max(220, e.clientX - sidebarWidth)));
+      }
+    };
+    const onMouseUp = () => {
+      draggingPane.current = null;
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [sidebarWidth]);
 
   // Generic Field Item Form Model
   const [formCategory, setFormCategory] = useState<ItemCategory>('login');
@@ -285,10 +319,17 @@ export function App() {
       setCopiedId(elemId);
       setTimeout(() => setCopiedId(null), 1400);
     }
-    setClipboardToast({
-      message: `${label} copied. Auto-clearing in`,
-      countdown: 25
-    });
+    if (clipboardClearSeconds > 0) {
+      setClipboardToast({
+        message: `${label} copied. Auto-clearing in`,
+        countdown: clipboardClearSeconds
+      });
+    } else {
+      setClipboardToast({
+        message: `${label} copied.`,
+        countdown: 3
+      });
+    }
   };
 
   const selectedItem = useMemo(() => {
@@ -627,10 +668,13 @@ export function App() {
       {activeTab === 'vault' ? (
         <div className="flex-1 flex overflow-hidden">
           
-          {/* Column 1: Collections Sidebar */}
-          <aside className={`w-44 border-r flex flex-col justify-between shrink-0 text-xs ${
-            isDark ? 'border-zinc-800/80 bg-zinc-950/40' : 'border-zinc-200/90 bg-[#f4f5f8]'
-          }`}>
+          {/* Column 1: Collections Sidebar (Resizable) */}
+          <aside
+            style={{ width: `${sidebarWidth}px` }}
+            className={`border-r flex flex-col justify-between shrink-0 text-xs ${
+              isDark ? 'border-zinc-800/80 bg-zinc-950/40' : 'border-zinc-200/90 bg-[#f4f5f8]'
+            }`}
+          >
             <div className="p-2.5 space-y-3.5">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-wider px-2 block opacity-50">Vault Spaces</span>
@@ -704,10 +748,20 @@ export function App() {
             </div>
           </aside>
 
-          {/* Column 2: Items List */}
-          <section className={`w-64 lg:w-72 border-r flex flex-col shrink-0 ${
-            isDark ? 'border-zinc-800/80 bg-zinc-900/20' : 'border-zinc-200/90 bg-[#fbfbfd]'
-          }`}>
+          {/* Drag Splitter 1 */}
+          <div
+            onMouseDown={() => { draggingPane.current = 'sidebar'; }}
+            className="w-1 -ml-0.5 cursor-col-resize hover:bg-emerald-500/40 transition-colors shrink-0 z-10"
+            title="Drag to resize Spaces sidebar"
+          />
+
+          {/* Column 2: Items List (Resizable) */}
+          <section
+            style={{ width: `${listWidth}px` }}
+            className={`border-r flex flex-col shrink-0 ${
+              isDark ? 'border-zinc-800/80 bg-zinc-900/20' : 'border-zinc-200/90 bg-[#fbfbfd]'
+            }`}
+          >
             <div className={`p-2 border-b ${isDark ? 'border-zinc-800/80 bg-zinc-950/40' : 'border-zinc-200/90 bg-white'}`}>
               <div className="relative">
                 <Search className="w-3 h-3 absolute left-2.5 top-2 opacity-50" />
@@ -786,8 +840,15 @@ export function App() {
             </div>
           </section>
 
+          {/* Drag Splitter 2 */}
+          <div
+            onMouseDown={() => { draggingPane.current = 'list'; }}
+            className="w-1 -ml-0.5 cursor-col-resize hover:bg-emerald-500/40 transition-colors shrink-0 z-10"
+            title="Drag to resize Record list"
+          />
+
           {/* Column 3: Full Secret Record Inspector */}
-          <main className="flex-1 flex flex-col overflow-y-auto">
+          <main className="flex-1 min-w-0 flex flex-col overflow-y-auto justify-between">
             {selectedItem ? (
               <div className="w-full p-5 space-y-4">
                 
@@ -961,6 +1022,16 @@ export function App() {
                     </div>
                   )}
                 </div>
+
+                {/* Record Security & Envelope Status Footer */}
+                <div className={`pt-3 mt-2 border-t flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono opacity-55 ${
+                  isDark ? 'border-zinc-800/70' : 'border-zinc-200'
+                }`}>
+                  <span>CIPHER: XChaCha20-Poly1305 • KDF: Argon2id (64 MiB)</span>
+                  <span>
+                    {screenProtection ? 'ANTI-CAPTURE ON' : 'ANTI-CAPTURE OFF'} • RAM PINNED
+                  </span>
+                </div>
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center text-xs opacity-50">
@@ -1079,9 +1150,78 @@ export function App() {
                 <option value={0}>Disabled</option>
               </select>
             </div>
+
+            <div className="flex items-center justify-between gap-3 pt-2 border-t border-zinc-800/40">
+              <div>
+                <span className="font-medium block">Clipboard Auto-Clear</span>
+                <span className="opacity-50 text-[11px]">Wipes copied secrets automatically</span>
+              </div>
+              <select
+                value={clipboardClearSeconds}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  setClipboardClearSeconds(val);
+                  localStorage.setItem('repose_clip_clear', String(val));
+                }}
+                className={`border rounded px-2.5 py-1 text-xs shrink-0 ${
+                  isDark ? 'bg-zinc-950 border-zinc-800 text-white' : 'bg-zinc-50 border-zinc-200 text-black'
+                }`}
+              >
+                <option value={10}>10 Seconds</option>
+                <option value={25}>25 Seconds</option>
+                <option value={60}>60 Seconds</option>
+                <option value={0}>Manual Only</option>
+              </select>
+            </div>
           </div>
 
-          <div className={`p-4 rounded-lg border space-y-3 ${
+          <div className={`p-4 rounded-lg border space-y-2.5 ${
+            isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+          }`}>
+            <span className="font-medium block">OS Compatibility &amp; Window Behavior</span>
+            <label className="flex items-center justify-between cursor-pointer text-[11px]">
+              <span className="opacity-80">Anti-Screen Capture (WDA_EXCLUDEFROMCAPTURE)</span>
+              <input
+                type="checkbox"
+                checked={screenProtection}
+                onChange={async e => {
+                  const next = e.target.checked;
+                  setScreenProtection(next);
+                  if (isTauriRuntime()) {
+                    try {
+                      const { invoke } = await import('@tauri-apps/api/core');
+                      await invoke('set_screen_protection', { enabled: next });
+                    } catch {
+                      // Browser preview no-op
+                    }
+                  }
+                }}
+              />
+            </label>
+            <label className="flex items-center justify-between cursor-pointer text-[11px]">
+              <span className="opacity-80">Lock &amp; Minimize to System Tray on Close</span>
+              <input
+                type="checkbox"
+                checked={closeToTray}
+                onChange={e => setCloseToTray(e.target.checked)}
+              />
+            </label>
+            <label className="flex items-center justify-between cursor-pointer text-[11px]">
+              <span className="opacity-80">Reduce Motion (Instant UI Transitions)</span>
+              <input
+                type="checkbox"
+                checked={reduceMotion}
+                onChange={e => {
+                  const next = e.target.checked;
+                  setReduceMotion(next);
+                  localStorage.setItem('repose_reduce_motion', String(next));
+                }}
+              />
+            </label>
+          </div>
+          </div>
+
+          <div className={`p-4 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
             isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
           }`}>
             <div>
@@ -1090,7 +1230,7 @@ export function App() {
                 Plaintext JSON export disabled. Backups use encrypted REPOSE01 archives.
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={handleExportVault}
                 className={`px-3 py-1.5 rounded font-medium flex items-center gap-1.5 cursor-pointer text-xs ${
@@ -1117,7 +1257,6 @@ export function App() {
                 onChange={handleImportFile}
               />
             </div>
-          </div>
           </div>
 
           <div className={`p-4 rounded-lg border space-y-3 ${
