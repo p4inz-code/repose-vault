@@ -105,8 +105,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build-setup.ps1
 
 ## License and credit
 
-Repose is free software under the **GNU General Public License v3.0** ([LICENSE](LICENSE)).
+Repose is free software under the **GNU General Public License v3.0** ([LICENSE](LICENSE)), with section 7 additional terms about credit and naming ([ADDITIONAL_TERMS.md](ADDITIONAL_TERMS.md)).
 
-You can use it for anything, free of charge, including at work. You can study it, change it, and share it, modified or not, under the same GPLv3 license.
+You can use it for anything, free of charge, including at work. You can study it, change it, and share it, modified or not. If you share a version, you must keep the author credit ("Created by Atharva Patil, P4inz Interactive Labs") and copyright notices, keep the source open under GPLv3, and give any modified version its own name instead of "Repose".
+
+Third-party components keep their own licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · [PRIVACY.md](PRIVACY.md) · [SECURITY.md](SECURITY.md).
 
 Copyright © 2026 Atharva Patil, [P4inz Interactive Labs](https://github.com/p4inz-code).

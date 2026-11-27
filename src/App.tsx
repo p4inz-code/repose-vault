@@ -1209,6 +1209,22 @@ export function App() {
               </button>
             )}
           </div>
+
+          <div className={`p-4 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] ${
+            isDark ? 'bg-zinc-900/30 border-zinc-800/80 text-zinc-400' : 'bg-zinc-50 border-zinc-200 text-zinc-600'
+          }`}>
+            <div>
+              <span className={`font-semibold block ${isDark ? 'text-zinc-200' : 'text-zinc-900'}`}>
+                Repose v1.0.0 — Created by Atharva Patil, P4inz Interactive Labs
+              </span>
+              <span>
+                Copyright © 2026 Atharva Patil. Free software under GNU GPL v3.0 (with §7 credit &amp; naming terms).
+              </span>
+            </div>
+            <span className="font-mono text-[10px] opacity-75 shrink-0">
+              github.com/p4inz-code/repose-vault
+            </span>
+          </div>
         </div>
       )}
 
