@@ -26,7 +26,8 @@ Download the setup file for your system from the [latest release](https://github
 
 - **Windows 11 / 10 (x64):** `Repose-Setup-1.0.0.exe` (5.3 MB).  
   Run it. It unpacks and launches Repose's own custom setup wizard, installs **for your user only** (`%LOCALAPPDATA%\Programs\Repose`), and needs **no administrator rights**.
-- **macOS & Linux:** Cross-platform core & titlebar framing are built into the codebase; see [Build from source](#build-from-source) below.
+- **macOS (Apple Silicon & Intel):** `Repose_1.0.0_aarch64.dmg` / `Repose_1.0.0_x64.dmg`. Open it and drag Repose to Applications.
+- **Linux (x86_64):** `Repose_1.0.0_amd64.AppImage` (`chmod +x` and run) or `Repose_1.0.0_amd64.deb`.
 
 > **Custom Uninstaller & Data Safety:** When you uninstall Repose from Windows Settings or run `repose.exe --uninstall`, the uninstaller asks whether to **keep your encrypted `vault.repose` file** in `%APPDATA%\Repose` (so you never lose your passwords on reinstall) or permanently shred it.
 
