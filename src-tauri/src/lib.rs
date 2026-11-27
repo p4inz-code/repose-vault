@@ -3,6 +3,7 @@ pub mod crypto;
 pub mod installer;
 pub mod purple_team;
 pub mod security_guard;
+pub mod updater;
 pub mod vault_io;
 
 use std::path::PathBuf;
@@ -324,6 +325,24 @@ fn set_screen_protection(window: WebviewWindow, enabled: bool) -> Result<bool, S
     Ok(true)
 }
 
+#[tauri::command]
+fn check_for_updates() -> Result<updater::UpdateCheckResult, String> {
+    updater::check_latest_release(env!("CARGO_PKG_VERSION"))
+}
+
+#[tauri::command]
+fn install_verified_update(
+    app: AppHandle,
+    setup_url: String,
+    sha256sums_url: String,
+    setup_name: String,
+) -> Result<String, String> {
+    let msg = updater::download_verify_and_launch(&setup_url, &sha256sums_url, &setup_name)?;
+    // Exit current process cleanly so silent Setup can overwrite repose.exe without file lock
+    app.exit(0);
+    Ok(msg)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -398,7 +417,9 @@ pub fn run() {
             check_security_status,
             run_purple_team_audit,
             get_security_audit_log,
-            set_screen_protection
+            set_screen_protection,
+            check_for_updates,
+            install_verified_update
         ])
         .setup(move |app| {
             #[cfg(windows)]

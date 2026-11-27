@@ -88,6 +88,30 @@ export function App() {
           setIsModalOpen(false);
           setIsCommandOpen(false);
         });
+        if (info.mode === 'vault' && localStorage.getItem('repose_allow_updates') !== 'false') {
+          invoke<{
+            current_version: string;
+            latest_version: string;
+            update_available: boolean;
+            setup_url?: string;
+            setup_name?: string;
+            sha256sums_url?: string;
+          }>('check_for_updates')
+            .then(res => {
+              if (res.update_available) {
+                setUpdateStatus({
+                  checking: false,
+                  latestVersion: res.latest_version,
+                  updateAvailable: true,
+                  setupUrl: res.setup_url,
+                  setupName: res.setup_name,
+                  sha256sumsUrl: res.sha256sums_url,
+                  message: `Update available: ${res.latest_version}`,
+                });
+              }
+            })
+            .catch(() => {});
+        }
       } catch {
         // Fallback to browser preview
       }
@@ -128,6 +152,19 @@ export function App() {
   const [reduceMotion, setReduceMotion] = useState<boolean>(() => {
     return localStorage.getItem('repose_reduce_motion') === 'true';
   });
+  const [allowUpdateCheck, setAllowUpdateCheck] = useState<boolean>(() => {
+    const saved = localStorage.getItem('repose_allow_updates');
+    return saved === null ? true : saved === 'true';
+  });
+  const [updateStatus, setUpdateStatus] = useState<{
+    checking: boolean;
+    message: string;
+    latestVersion?: string;
+    updateAvailable?: boolean;
+    setupUrl?: string;
+    setupName?: string;
+    sha256sumsUrl?: string;
+  } | null>(null);
 
   // Resizable 3-Pane Widths
   const [sidebarWidth, setSidebarWidth] = useState<number>(184);
@@ -1257,6 +1294,101 @@ export function App() {
                 onChange={handleImportFile}
               />
             </div>
+          </div>
+
+          {/* Opt-In Update Checker (Off by default — preserves zero-network invariant) */}
+          <div className={`p-4 rounded-lg border space-y-2.5 ${
+            isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+          }`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <span className="font-medium block">Automatic Release Updates (github.com)</span>
+                <span className="opacity-50 text-[11px]">
+                  Plain read-only release check with zero user data. Verifies SHA-256 and updates silently without manual installation.
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <input
+                  type="checkbox"
+                  checked={allowUpdateCheck}
+                  onChange={e => {
+                    const next = e.target.checked;
+                    setAllowUpdateCheck(next);
+                    localStorage.setItem('repose_allow_updates', String(next));
+                    if (!next) setUpdateStatus(null);
+                  }}
+                  title="Allow manual update checks"
+                />
+                <button
+                  disabled={!allowUpdateCheck || updateStatus?.checking}
+                  onClick={async () => {
+                    setUpdateStatus({ checking: true, message: 'Checking GitHub Releases...' });
+                    if (!isTauriRuntime()) {
+                      setUpdateStatus({
+                        checking: false,
+                        message: 'v1.0.0 is the latest release (browser preview mode).',
+                      });
+                      return;
+                    }
+                    try {
+                      const { invoke } = await import('@tauri-apps/api/core');
+                      const res = await invoke<{
+                        current_version: string;
+                        latest_version: string;
+                        update_available: boolean;
+                        setup_url?: string;
+                        setup_name?: string;
+                        sha256sums_url?: string;
+                      }>('check_for_updates');
+                      setUpdateStatus({
+                        checking: false,
+                        latestVersion: res.latest_version,
+                        updateAvailable: res.update_available,
+                        setupUrl: res.setup_url,
+                        setupName: res.setup_name,
+                        sha256sumsUrl: res.sha256sums_url,
+                        message: res.update_available
+                          ? `Update available: ${res.latest_version}`
+                          : `Up to date (v${res.current_version}).`,
+                      });
+                    } catch (err) {
+                      setUpdateStatus({ checking: false, message: String(err) });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded border text-xs font-medium cursor-pointer disabled:opacity-40 ${
+                    isDark ? 'border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700' : 'border-zinc-300 bg-zinc-100 text-zinc-800 hover:bg-zinc-200'
+                  }`}
+                >
+                  {updateStatus?.checking ? 'Checking...' : 'Check for Updates'}
+                </button>
+              </div>
+            </div>
+
+            {updateStatus && (
+              <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-zinc-800/40">
+                <span className="opacity-80">{updateStatus.message}</span>
+                {updateStatus.updateAvailable && updateStatus.setupUrl && updateStatus.sha256sumsUrl && updateStatus.setupName && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { invoke } = await import('@tauri-apps/api/core');
+                        const msg = await invoke<string>('install_verified_update', {
+                          setupUrl: updateStatus.setupUrl,
+                          sha256sumsUrl: updateStatus.sha256sumsUrl,
+                          setupName: updateStatus.setupName,
+                        });
+                        setUpdateStatus({ checking: false, message: msg });
+                      } catch (err) {
+                        setUpdateStatus({ checking: false, message: String(err) });
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-500 cursor-pointer"
+                  >
+                    Verify SHA-256 &amp; Update
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className={`p-4 rounded-lg border space-y-3 ${
