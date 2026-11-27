@@ -98,17 +98,26 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build-setup.ps1
 
 ---
 
+## Documentation
+
+[Changelog](CHANGELOG.md) · [Additional Terms](ADDITIONAL_TERMS.md) · [Third-Party Notices](THIRD_PARTY_NOTICES.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Support](SUPPORT.md) · [Contributing](CONTRIBUTING.md)
+
 ## Support and feedback
 
 - Bugs and ideas: [open an issue](../../issues/new/choose)
-- Security issues: see [SECURITY.md](SECURITY.md)
+- Chat: [Discord](https://discord.gg/8UKt8s5FbW)
+- Security problems: see [SECURITY.md](SECURITY.md) and report privately
 
 ## License and credit
 
-Repose is free software under the **GNU General Public License v3.0** ([LICENSE](LICENSE)), with section 7 additional terms about credit and naming ([ADDITIONAL_TERMS.md](ADDITIONAL_TERMS.md)).
+Repose is free software under the **GNU General Public License v3.0** ([LICENSE](LICENSE)), with a few additional terms about credit and naming ([ADDITIONAL_TERMS.md](ADDITIONAL_TERMS.md)).
 
-You can use it for anything, free of charge, including at work. You can study it, change it, and share it, modified or not. If you share a version, you must keep the author credit ("Created by Atharva Patil, P4inz Interactive Labs") and copyright notices, keep the source open under GPLv3, and give any modified version its own name instead of "Repose".
+You can use it for anything, free of charge, including at work. You can study it, change it, and share it, modified or not. If you share a version, you must keep the author credit ("Created by Atharva Patil, P4inz Interactive Labs") and the copyright notices, keep the source open under the same GPLv3 license, and give a modified version its own name instead of "Repose". Nobody can take it closed-source or sell it as their own work.
 
-Third-party components keep their own licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) · [PRIVACY.md](PRIVACY.md) · [SECURITY.md](SECURITY.md).
+Third-party components keep their own licenses: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Copyright © 2026 Atharva Patil, [P4inz Interactive Labs](https://github.com/p4inz-code).
+Copyright © 2026 Atharva Patil.
+
+---
+
+Built by [P4inz Interactive Labs](https://github.com/p4inz-code).
