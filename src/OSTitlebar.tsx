@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Atharva Patil, P4inz Interactive Labs.
+
 import React, { useState } from 'react';
 import type { OSPlatform, ThemeMode } from './types';
 import { ReposeLogo } from './ReposeLogo';
@@ -12,8 +15,8 @@ interface OSTitlebarProps {
   onLock?: () => void;
   onCommandOpen?: () => void;
   onCreateOpen?: () => void;
-  activeTab?: 'vault' | 'settings';
-  onSelectTab?: (tab: 'vault' | 'settings') => void;
+  activeTab?: 'vault' | 'settings' | 'about';
+  onSelectTab?: (tab: 'vault' | 'settings' | 'about') => void;
 }
 
 export function OSTitlebar({
@@ -165,6 +168,18 @@ export function OSTitlebar({
               }`}
             >
               Settings
+            </button>
+            <button
+              onClick={() => onSelectTab('about')}
+              className={`px-2.5 py-0.5 rounded cursor-pointer font-medium transition-colors ${
+                activeTab === 'about'
+                  ? isDark
+                    ? 'bg-zinc-800 text-white'
+                    : 'bg-zinc-200 text-black'
+                  : 'opacity-60 hover:opacity-100'
+              }`}
+            >
+              About
             </button>
           </div>
         )}

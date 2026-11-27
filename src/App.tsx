@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Atharva Patil, P4inz Interactive Labs.
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Eye, EyeOff, Search, Copy, Check, Trash2, Star,
@@ -17,6 +20,7 @@ import {
 import { LockScreen } from './LockScreen';
 import { OSTitlebar } from './OSTitlebar';
 import { InstallerWizard } from './InstallerWizard';
+import { ReposeLogo } from './ReposeLogo';
 
 const isTauriRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
@@ -126,7 +130,7 @@ export function App() {
   const [selectedItemId, setSelectedItemId] = useState<string>(INITIAL_ITEMS[0].id);
   const [selectedCollection, setSelectedCollection] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'vault' | 'settings'>('vault');
+  const [activeTab, setActiveTab] = useState<'vault' | 'settings' | 'about'>('vault');
 
   // Clipboard & UI Feedback
   const [clipboardToast, setClipboardToast] = useState<{ message: string; countdown: number } | null>(null);
@@ -1093,7 +1097,7 @@ export function App() {
             )}
           </main>
         </div>
-      ) : (
+      ) : activeTab === 'settings' ? (
         /* Settings Tab */
         <div className="flex-1 p-6 w-full max-w-4xl mx-auto space-y-4 overflow-y-auto text-xs">
           <div>
@@ -1519,6 +1523,86 @@ export function App() {
             <span className="font-mono text-[10px] opacity-75 shrink-0">
               github.com/p4inz-code/repose-vault
             </span>
+          </div>
+        </div>
+      ) : (
+        /* About & Legal Page */
+        <div className="flex-1 p-6 w-full max-w-4xl mx-auto space-y-4 overflow-y-auto text-xs">
+          <div className={`p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+            isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+          }`}>
+            <div className="flex items-center gap-3.5">
+              <ReposeLogo size={40} />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-semibold tracking-tight">Repose</h2>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono border ${
+                    isDark ? 'bg-zinc-950 border-zinc-800 text-zinc-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600'
+                  }`}>
+                    v1.0.0
+                  </span>
+                </div>
+                <p className="text-xs opacity-60 mt-0.5">
+                  Created by Atharva Patil, P4inz Interactive Labs
+                </p>
+                <p className="text-[11px] font-mono opacity-50 mt-0.5">
+                  Copyright © 2026 Atharva Patil — Free Software under GNU GPL v3.0
+                </p>
+              </div>
+            </div>
+            <div className="text-left sm:text-right font-mono text-[10px] opacity-70 space-y-0.5">
+              <span className="block">SPDX: GPL-3.0-only</span>
+              <span className="block">github.com/p4inz-code/repose-vault</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className={`p-4 rounded-lg border space-y-2 ${
+              isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+            }`}>
+              <span className="font-semibold block">License &amp; Appropriate Legal Notices (GPLv3)</span>
+              <p className="opacity-70 text-[11px] leading-relaxed">
+                This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3 (<code>LICENSE</code>).
+              </p>
+              <p className="opacity-55 text-[10px] font-mono leading-relaxed pt-1 border-t border-zinc-800/40">
+                NO WARRANTY: THIS PROGRAM IS PROVIDED &ldquo;AS IS&rdquo; WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED (GPLv3 §15–16).
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border space-y-2 ${
+              isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+            }`}>
+              <span className="font-semibold block">Brand &amp; Credit Terms (GPLv3 §7)</span>
+              <ul className="space-y-1 text-[11px] opacity-75">
+                <li><strong>§7(b) Credit:</strong> Keep author attribution (&ldquo;Created by Atharva Patil, P4inz Interactive Labs&rdquo;) and source link.</li>
+                <li><strong>§7(c) Origin:</strong> Modified versions must be clearly marked as modified.</li>
+                <li><strong>§7(e) Naming:</strong> The license gives you the code, not the <strong>Repose</strong> name or squircle logo mark.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-lg border space-y-2.5 ${
+            isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white border-zinc-200 shadow-2xs'
+          }`}>
+            <span className="font-semibold block">Third-Party Open-Source Notices</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div className={`p-2 rounded border ${isDark ? 'bg-zinc-950/60 border-zinc-800/80' : 'bg-zinc-50 border-zinc-200'}`}>
+                <span className="font-medium block">Tauri v2 (tauri, wry, tao)</span>
+                <span className="font-mono text-[10px] opacity-60">Apache-2.0 OR MIT</span>
+              </div>
+              <div className={`p-2 rounded border ${isDark ? 'bg-zinc-950/60 border-zinc-800/80' : 'bg-zinc-50 border-zinc-200'}`}>
+                <span className="font-medium block">RustCrypto (argon2, chacha20poly1305, zeroize)</span>
+                <span className="font-mono text-[10px] opacity-60">Apache-2.0 OR MIT</span>
+              </div>
+              <div className={`p-2 rounded border ${isDark ? 'bg-zinc-950/60 border-zinc-800/80' : 'bg-zinc-50 border-zinc-200'}`}>
+                <span className="font-medium block">React 19, Vite, Tailwind CSS, Lucide</span>
+                <span className="font-mono text-[10px] opacity-60">MIT / ISC</span>
+              </div>
+              <div className={`p-2 rounded border ${isDark ? 'bg-zinc-950/60 border-zinc-800/80' : 'bg-zinc-50 border-zinc-200'}`}>
+                <span className="font-medium block">Inter &amp; JetBrains Mono Fonts</span>
+                <span className="font-mono text-[10px] opacity-60">SIL Open Font License 1.1</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

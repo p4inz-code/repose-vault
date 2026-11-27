@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/screenshots/vault-dark.png" alt="Repose Space Vault in dark mode: Spaces on the left, searchable record stream in the middle, and structured key-value secret inspector on the right." width="100%">
+  <img src="assets/readme/hero.jpg" alt="Repose: One calm vault. Zero internet. Airgapped Space Vault built with Rust, Argon2id, and XChaCha20-Poly1305." width="100%">
 </p>
 
 <h1 align="center">Repose</h1>
